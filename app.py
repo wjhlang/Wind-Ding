@@ -1,30 +1,34 @@
 import streamlit as st
 import requests
 import os
+import time
 from dotenv import load_dotenv
 from streamlit_geolocation import streamlit_geolocation
 
-# Load local .env (only works on your computer, not cloud if you deleted .env)
+# Load env (local only)
 load_dotenv()
 
 st.set_page_config(page_title="Wind-ding", page_icon="🎐")
 
-# --- STYLES ---
+# --- CSS: FORCE WHITE THEME & STYLING ---
 st.markdown("""
 <style>
-    /* 1. Center everything */
-    .stApp { text-align: center; }
+    /* 1. Force White Background & Black Text */
+    .stApp {
+        background-color: #FFFFFF;
+        color: #000000;
+        text-align: center;
+    }
     
-    /* 2. Hide Audio Player */
+    /* 2. Hide the Audio Player UI */
     .stAudio { display: none; }
     
-    /* 3. Button Styling "Ring It" */
-    /* This targets the geolocation button specifically */
+    /* 3. Style the Geolocation Button to look like "Ring It" */
     div[data-testid="stBlock"] button {
         width: 220px !important;
         height: 60px !important;
-        background-color: #ff4b4b !important;
-        color: transparent !important; /* Hide default icon */
+        background-color: #000000 !important; /* Black button */
+        color: transparent !important;
         border-radius: 30px !important;
         border: none !important;
         margin: 20px auto !important;
@@ -32,7 +36,6 @@ st.markdown("""
         position: relative;
     }
     
-    /* Overlay our own text on the button */
     div[data-testid="stBlock"] button::after {
         content: "🎐 Ring It";
         color: white;
@@ -44,19 +47,32 @@ st.markdown("""
         transform: translate(-50%, -50%);
     }
 
-    /* 4. Center the "Try Again" button */
+    /* 4. Center normal buttons (Try Again) */
     .stButton button {
         margin: 0 auto;
         display: block;
+        background-color: white;
+        color: black;
+        border: 2px solid black;
+    }
+    .stButton button:hover {
+        border-color: #333;
+        background-color: #f0f0f0;
+        color: black;
     }
 
-    /* Title Styling */
+    /* Title */
     .big-title { 
         font-size: 32px !important; 
         font-weight: bold; 
         font-family: sans-serif;
+        color: black;
         margin-bottom: 5px;
     }
+    
+    /* Metric Labels */
+    div[data-testid="stMetricLabel"] { color: #555 !important; }
+    div[data-testid="stMetricValue"] { color: #000 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -73,105 +89,123 @@ def get_weather_by_coords(lat, lon, key):
     except:
         return None
 
-# --- API KEY SETUP ---
+# --- SETUP ---
 api_key = st.secrets.get("OPENWEATHER_API_KEY") or os.getenv("OPENWEATHER_API_KEY")
-
 if not api_key:
-    st.error("⚠️ API Key missing. Please ask the administrator 'You know Who'.")
+    st.error("⚠️ API Key missing.")
     st.stop()
 
-# Initialize Session State
+# Session State
 if 'coords' not in st.session_state:
     st.session_state['coords'] = None
+if 'refresh_trigger' not in st.session_state:
+    st.session_state['refresh_trigger'] = 0
 
 # --- MAIN APP ---
 
 st.markdown('<div class="big-title">這個是風鈴 (This is Wind-ding)</div>', unsafe_allow_html=True)
 
-# PHASE 1: GET LOCATION (Only show if we don't have coords yet)
-if st.session_state['coords'] is None:
-    st.write("Click below to check the wind.")
-    
-    # This renders the button. CSS above transforms it into "Ring It"
-    location = streamlit_geolocation()
-    
-    if location and location['latitude'] is not None:
-        # Save coords and rerun to enter Phase 2
-        st.session_state['coords'] = {'lat': location['latitude'], 'lon': location['longitude']}
-        st.rerun()
+# Placeholder ensures we can wipe the button off the screen completely
+main_placeholder = st.empty()
 
-# PHASE 2: SHOW RESULT (We have coords)
+# PHASE 1: GET LOCATION
+if st.session_state['coords'] is None:
+    with main_placeholder.container():
+        st.write("Click below to check the wind.")
+        # The CSS above turns this into the "Ring It" button
+        location = streamlit_geolocation()
+        
+        if location and location['latitude'] is not None:
+            st.session_state['coords'] = {'lat': location['latitude'], 'lon': location['longitude']}
+            st.rerun()
+
+# PHASE 2: RESULT
 else:
+    # Clear Phase 1 content immediately
+    main_placeholder.empty()
+    
     lat = st.session_state['coords']['lat']
     lon = st.session_state['coords']['lon']
     
+    # Spinner for "Try Again" feeling
     with st.spinner("Listening to the wind..."):
+        # Artificial delay so "Try Again" feels like it's doing work
+        time.sleep(0.5) 
         data = get_weather_by_coords(lat, lon, api_key)
 
     if data:
         wind_speed_ms = data['wind']['speed']
-        wind_speed_kmh = round(wind_speed_ms * 3.6, 1) # Convert for readability
+        wind_speed_kmh = round(wind_speed_ms * 3.6, 1)
         city_name = data['name']
-        
-        # LOGIC
-        threshold = 5.0 
+        threshold = 5.0
         is_windy = wind_speed_ms >= threshold
         
         # --- DISPLAY ---
         
-        # 1. Metrics
+        # 1. Metrics (Simple Black Text)
         c1, c2 = st.columns(2)
         c1.metric("Location", city_name)
-        c2.metric("Wind Speed", f"{wind_speed_ms} m/s ({wind_speed_kmh} km/h)")
+        c2.metric("Wind Speed", f"{wind_speed_ms} m/s")
         
-        # 2. The Result
+        # 2. Logic
         if is_windy:
-            st.success("💨 It is windy! The chime rings.")
+            st.success(f"It is windy ({wind_speed_kmh} km/h). The chime rings.")
             
-            # --- MEME VISUALIZATION (Only if windy) ---
-            # Shrunk dimensions: Diamond width 2.5, Rectangle width 1.0
+            # --- MEME (B/W, Small Diamond) ---
+            # shape=diamond width=1.8 (Shrunk horizontally)
+            # color=black for all lines
             dot_code = f"""
             digraph G {{
                 rankdir=TB;
-                bgcolor="transparent";
+                bgcolor="white";
                 nodesep=0.5;
                 
-                node [fontname="Helvetica", style=filled, fillcolor=white, penwidth=2];
+                node [fontname="Helvetica", style=solid, color=black, fontcolor=black, penwidth=1.5];
+                edge [color=black, penwidth=1.5, arrowsize=1.0];
                 
-                Start [shape=diamond, label="風有在吹嗎？\\n(Is the wind blowing?)", width=2.5, height=1.0];
+                # Diamond: width=1.8 (Small), height=0.8
+                Start [shape=diamond, label="風有在吹嗎？\\n(Is the wind blowing?)", width=1.8, height=0.8];
                 
-                Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding-)", fixedsize=true, width=1.0, height=3.0, fontsize=18, color="red", penwidth=3];
+                # Chime: width=0.8, height=3.0
+                Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding-)", fixedsize=true, width=0.8, height=3.0, fontsize=18];
                 
-                Start:s -> Ding:n [label=" YES ", color="green", fontcolor="green", penwidth=3, style="solid", arrowsize=1.2];
+                # Connection
+                Start:s -> Ding:n [label=" YES ", fontcolor=black, style=solid];
             }}
             """
             st.graphviz_chart(dot_code, use_container_width=True)
             
-            # Sound
+            # --- SOUND FIX ---
             if os.path.exists("sounds/furin.mp3"):
-                st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
+                # We add a unique 'key' using time.time(). 
+                # This forces Streamlit to destroy and recreate the audio player.
+                # This tricks the browser into playing the sound again on 'Try Again'.
+                st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True, start_time=0)
                 
         else:
-            # --- CALM STATE (No Meme) ---
-            st.info("🍂 It is calm. The wind chime sleeps.")
+            # Calm State
+            st.info(f"It is calm ({wind_speed_kmh} km/h).")
+            # Simple line art for "Calm"
             st.markdown("""
-            <div style='font-size: 50px; margin-top: 20px;'>🚫🎐</div>
+            <div style='font-size: 60px; margin-top: 20px; filter: grayscale(100%);'>🍂</div>
             """, unsafe_allow_html=True)
 
         st.write("") # Spacer
         
         # 3. Try Again Button
-        # Logic: We keep the coords, just rerun the script to fetch new weather data
+        # This will just rerun the script. 
+        # Because we added the time.sleep and spinner above, and the unique key to audio, 
+        # it will feel like a real refresh.
         if st.button("🔄 Try Again"):
+            st.session_state['refresh_trigger'] += 1 # dummy change to force state update
             st.rerun()
             
-        # Reset Button (To choose new location)
         if st.button("📍 Change Location"):
             st.session_state['coords'] = None
             st.rerun()
 
     else:
-        st.error("Could not fetch weather data.")
+        st.error("Error fetching weather.")
         if st.button("Back"):
             st.session_state['coords'] = None
             st.rerun()
