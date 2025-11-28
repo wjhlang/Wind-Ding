@@ -22,21 +22,48 @@ st.markdown("""
     /* 2. HIDE AUDIO PLAYER */
     .stAudio { display: none; }
 
-    /* 3. CENTER BUTTONS */
-    .stButton button {
-        margin: 0 auto;
-        display: block;
+    /* 3. CENTER & STYLE ALL BUTTONS (Streamline Look) */
+    .stButton button, div[data-testid="stBlock"] button {
+        background-color: white !important;
+        color: black !important;
+        border: 2px solid black !important;
+        border-radius: 8px !important;
+        padding: 10px 24px !important;
+        font-weight: bold !important;
+        margin: 0 auto !important;
+        display: block !important;
+        transition: all 0.2s;
+    }
+    
+    /* Hover Effect: Turn Black */
+    .stButton button:hover, div[data-testid="stBlock"] button:hover {
+        background-color: black !important;
+        color: white !important;
+        border-color: black !important;
+    }
+    
+    /* Fix the SVG Icon inside the geolocation button to swap colors too */
+    div[data-testid="stBlock"] button svg {
+        fill: currentColor !important;
     }
     
     /* 4. TITLE STYLE */
     h1 {
         color: black !important;
         font-weight: 700 !important;
+        font-family: sans-serif;
     }
     
-    /* 5. METRICS STYLE */
-    div[data-testid="stMetricLabel"] { color: #666 !important; }
-    div[data-testid="stMetricValue"] { color: #000 !important; }
+    /* 5. METRICS STYLE (Restoring the labels) */
+    div[data-testid="stMetricLabel"] { 
+        color: #666 !important; /* Grey color for the small label */
+        font-size: 14px !important;
+        font-weight: normal !important;
+    }
+    div[data-testid="stMetricValue"] { 
+        color: #000 !important; /* Black color for the value */
+        font-weight: bold !important;
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -69,11 +96,10 @@ if st.session_state['coords'] is None:
     st.write("") # Spacer
 
     # Use Columns to center the button
-    # [3, 1, 3] creates a narrow column in the middle for the button
     c1, c2, c3 = st.columns([3, 1, 3])
     
     with c2:
-        # The Geolocation button (Standard icon style)
+        # The Geolocation button (Now White with Black Border)
         loc = streamlit_geolocation()
     
     if loc and loc['latitude'] is not None:
@@ -106,21 +132,23 @@ else:
             if os.path.exists("sounds/furin.mp3"):
                 st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
             
-            # MEME GRAPH (Black & White, Narrow Diamond)
+            # MEME GRAPH (Thinner strokes, smaller font)
             dot = f"""
             digraph G {{
                 bgcolor="transparent"; rankdir=TB; nodesep=0.5;
-                node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=2];
-                edge [color=black, penwidth=2];
+                
+                # Global Node Settings: Thinner lines (penwidth=1), smaller font (fontsize=12)
+                node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=12];
+                edge [color=black, penwidth=1.0];
 
                 # Diamond: Narrow width
                 Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", width=1.2, height=0.8, fixedsize=true];
                 
                 # Chime: Thin strip
-                Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.8, height=3.0, fontsize=16];
+                Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.8, height=3.0, fontsize=12];
                 
                 # Connection
-                Start:s -> Ding:n [label=" YES ", fontcolor=black];
+                Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=10];
             }}
             """
             st.graphviz_chart(dot, use_container_width=True)
