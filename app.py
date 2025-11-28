@@ -178,7 +178,7 @@ else:
                     Start [shape=diamond, label="Is the wind blowing?", fontsize=9, width=1.5, height=0.7, fixedsize=true];
                     
                     # Chime
-                    Ding [shape=box, label="Ding", fixedsize=true, width=0.6, height=2.2, fontsize=11];
+                    Ding [shape=box, label="Ding\\n|", fixedsize=true, width=0.6, height=2.2, fontsize=11];
                     
                     Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=9];
                 }}
