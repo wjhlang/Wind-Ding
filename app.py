@@ -3,11 +3,12 @@ import requests
 import os
 from dotenv import load_dotenv
 from streamlit_geolocation import streamlit_geolocation
+import random
 
 # Load env (local)
 load_dotenv()
 
-st.set_page_config(page_title="Wind-ding", page_icon="🎐", layout="centered")
+st.set_page_config(page_title="Wind-Ding", page_icon="🎐", layout="centered")
 
 # --- CSS: FINAL POLISH ---
 st.markdown("""
@@ -19,55 +20,61 @@ st.markdown("""
         font-family: sans-serif;
     }
     
-    /* 2. HIDE HEADER & AUDIO */
+    /* 2. HIDE HEADER & AUDIO PLAYER */
     header[data-testid="stHeader"] { display: none; }
     .stAudio { display: none; }
 
-    /* 3. BUTTON STYLING (The Fix) */
+    /* 3. BUTTON STYLING */
     button {
         background-color: #ffffff !important;
         color: #000000 !important;
         border: 2px solid #000000 !important;
         border-radius: 8px !important;
-        padding: 6px 18px !important;
+        padding: 8px 20px !important;
         box-shadow: none !important;
+        transition: all 0.2s;
         
-        /* THIS FIXES THE BLACK BAR: Force button to shrink to content size */
+        /* FIX THE BLACK BAR: Force button to shrink to content */
         width: auto !important; 
-        display: inline-flex !important;
-        justify-content: center !important;
-        align-items: center !important;
+        min-width: 100px !important;
     }
     
     button:hover {
         background-color: #000000 !important;
         color: #ffffff !important;
-        /* Ensure the icon changes color on hover too */
         fill: #ffffff !important;
     }
     
-    /* Fix the SVG icon color inside the button */
     button svg {
         fill: currentColor !important;
     }
 
-    /* 4. METRICS TEXT COLOR */
+    /* 4. REMOVE GHOST BARS & FORCE CENTERING */
+    /* This removes background from the button's container div */
+    div.row-widget.stButton {
+        text-align: center;
+        background: transparent !important;
+    }
+    div[data-testid="stBlock"] {
+        background: transparent !important;
+    }
+    
+    /* Force content inside columns to center */
+    div[data-testid="column"] {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 5. METRICS TEXT COLOR */
     div[data-testid="stMetricLabel"] { color: #666 !important; font-size: 14px !important; }
     div[data-testid="stMetricValue"] { color: #000 !important; }
 
-    /* 5. TITLE STYLE */
+    /* 6. TITLE STYLE */
     h1 {
         color: black !important;
         text-align: center;
         padding-top: 20px;
-    }
-    
-    /* 6. CENTER THE GEOLOCATION BUTTON CONTAINER */
-    /* This targets the middle column specifically to force centering */
-    div[data-testid="column"]:nth-of-type(2) {
-        display: flex;
-        justify-content: center;
-        align-items: center;
     }
 
 </style>
@@ -93,7 +100,7 @@ if 'coords' not in st.session_state:
 
 # --- MAIN UI ---
 
-st.title("This is Wind-ding")
+st.title("This is Wind-Ding")
 
 # === STATE 1: START SCREEN ===
 if st.session_state['coords'] is None:
@@ -144,9 +151,18 @@ else:
         
         # --- THE MEME ---
         if is_windy:
-            if os.path.exists("sounds/furin.mp3"):
-                st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
-            
+            # RANDOM SOUND LOGIC
+            if os.path.exists("sounds"):
+                # List all files in 'sounds' folder that end with .mp3
+                sound_files = [f for f in os.listdir("sounds") if f.endswith(".mp3")]
+                
+                if sound_files:
+                    # Pick a random file
+                    random_sound = random.choice(sound_files)
+                    st.audio(f"sounds/{random_sound}", format="audio/mp3", autoplay=True)
+                else:
+                    st.warning("No MP3 files found in 'sounds' folder.")
+
             col_left, col_mid, col_right = st.columns([1, 4, 1]) # Wider middle column for graph
             with col_mid:
                 # CHANGES HERE: fontsize=9, width=1.5
@@ -159,16 +175,16 @@ else:
                     edge [color=black, penwidth=1.0, arrowsize=0.6];
 
                     # Diamond: Wider (1.5) and Smaller Font (fontsize=9)
-                    Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", fontsize=9, width=1.5, height=0.7, fixedsize=true];
+                    Start [shape=diamond, label="Is the wind blowing?", fontsize=9, width=1.5, height=0.7, fixedsize=true];
                     
                     # Chime
-                    Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.6, height=2.2, fontsize=11];
+                    Ding [shape=box, label="Ding", fixedsize=true, width=0.6, height=2.2, fontsize=11];
                     
                     Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=9];
                 }}
                 """
                 st.graphviz_chart(dot, use_container_width=True)
-                st.markdown("<p style='text-align: center; color: black; font-weight: bold;'>The chime rings.</p>", unsafe_allow_html=True)
+                st.markdown("", unsafe_allow_html=True)
             
         else:
             # CALM STATE
@@ -178,7 +194,7 @@ else:
                 st.markdown("<p style='text-align: center; color: black; font-weight: bold;'>It is calm.</p>", unsafe_allow_html=True)
                 st.markdown("<p style='text-align: center; color: #555;'>The wind chime sleeps.</p>", unsafe_allow_html=True)
 
-        # --- RESET BUTTON (LEFT ALIGNED) ---
+        # --- RESET BUTTON ---
         st.write("")
         st.write("")
         
