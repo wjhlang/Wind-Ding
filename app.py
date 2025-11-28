@@ -9,25 +9,21 @@ load_dotenv()
 
 st.set_page_config(page_title="Wind-ding", page_icon="🎐", layout="centered")
 
-# --- CSS: THE FINAL FIX ---
+# --- CSS: FINAL POLISH ---
 st.markdown("""
 <style>
-    /* 1. FORCE THEME: WHITE BACKGROUND, BLACK TEXT */
+    /* 1. FORCE THEME: WHITE BACKGROUND */
     .stApp {
         background-color: #ffffff;
         color: #000000;
         font-family: sans-serif;
     }
     
-    /* 2. HIDE THE STREAMLIT TOP BAR (The "Off" looking bar) */
-    header[data-testid="stHeader"] {
-        display: none;
-    }
-    
-    /* 3. HIDE AUDIO PLAYER */
+    /* 2. HIDE HEADER & AUDIO */
+    header[data-testid="stHeader"] { display: none; }
     .stAudio { display: none; }
 
-    /* 4. BUTTON STYLING (Clean White with Black Border) */
+    /* 3. BUTTON STYLING (The Fix) */
     button {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -35,24 +31,43 @@ st.markdown("""
         border-radius: 8px !important;
         padding: 6px 18px !important;
         box-shadow: none !important;
-        transition: all 0.2s;
+        
+        /* THIS FIXES THE BLACK BAR: Force button to shrink to content size */
+        width: auto !important; 
+        display: inline-flex !important;
+        justify-content: center !important;
+        align-items: center !important;
     }
+    
     button:hover {
         background-color: #000000 !important;
         color: #ffffff !important;
+        /* Ensure the icon changes color on hover too */
+        fill: #ffffff !important;
     }
     
-    /* Fix the geolocation button container */
-    div[data-testid="stBlock"] button {
-        background: white !important;
-        width: auto !important;
+    /* Fix the SVG icon color inside the button */
+    button svg {
+        fill: currentColor !important;
     }
+
+    /* 4. METRICS TEXT COLOR */
+    div[data-testid="stMetricLabel"] { color: #666 !important; font-size: 14px !important; }
+    div[data-testid="stMetricValue"] { color: #000 !important; }
 
     /* 5. TITLE STYLE */
     h1 {
         color: black !important;
         text-align: center;
         padding-top: 20px;
+    }
+    
+    /* 6. CENTER THE GEOLOCATION BUTTON CONTAINER */
+    /* This targets the middle column specifically to force centering */
+    div[data-testid="column"]:nth-of-type(2) {
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
 </style>
@@ -85,7 +100,8 @@ if st.session_state['coords'] is None:
     st.markdown("<p style='text-align: center; color: #333;'>Click the button below to check the wind.</p>", unsafe_allow_html=True)
     st.write("") 
 
-    # CENTER THE GEOLOCATION BUTTON
+    # CENTER BUTTON using Columns
+    # The CSS rule #6 above ensures the contents of this middle column are centered flex-wise
     c1, c2, c3 = st.columns([1, 1, 1])
     with c2:
         loc = streamlit_geolocation()
@@ -107,9 +123,7 @@ else:
         city = data['name']
         is_windy = speed >= 5.0 # Threshold
         
-        # --- CUSTOM HTML METRICS (Fixes the Invisible Text Issue) ---
-        # We manually write HTML to guarantee the text is Black/Grey
-        
+        # --- CUSTOM HTML METRICS ---
         m1, m2 = st.columns(2)
         with m1:
             st.markdown(f"""
@@ -118,7 +132,6 @@ else:
                 <p style="color: #000; margin: 0; font-size: 24px; font-weight: bold;">{city}</p>
             </div>
             """, unsafe_allow_html=True)
-            
         with m2:
             st.markdown(f"""
             <div style="text-align: center;">
@@ -134,18 +147,22 @@ else:
             if os.path.exists("sounds/furin.mp3"):
                 st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
             
-            # Center the meme
-            col_left, col_mid, col_right = st.columns([1, 2, 1])
+            col_left, col_mid, col_right = st.columns([1, 4, 1]) # Wider middle column for graph
             with col_mid:
+                # CHANGES HERE: fontsize=9, width=1.5
                 dot = f"""
                 digraph G {{
                     bgcolor="transparent"; rankdir=TB; nodesep=0.3;
                     
-                    node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=11];
+                    # Global settings
+                    node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=10];
                     edge [color=black, penwidth=1.0, arrowsize=0.6];
 
-                    Start [shape=diamond, label="Is the wind blowing?", width=1.0, height=0.6, fontsize=6,fixedsize=true];
-                    Ding [shape=box, label="Ding", fixedsize=true, width=0.6, height=2.2, fontsize=11];
+                    # Diamond: Wider (1.5) and Smaller Font (fontsize=9)
+                    Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", fontsize=9, width=1.5, height=0.7, fixedsize=true];
+                    
+                    # Chime
+                    Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.6, height=2.2, fontsize=11];
                     
                     Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=9];
                 }}
@@ -165,7 +182,6 @@ else:
         st.write("")
         st.write("")
         
-        # No columns here means it aligns left by default
         if st.button("Check Another Location"):
             st.session_state['coords'] = None
             st.rerun()
