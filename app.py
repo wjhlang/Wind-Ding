@@ -9,7 +9,7 @@ load_dotenv()
 
 st.set_page_config(page_title="Wind-ding", page_icon="🎐")
 
-# --- CSS: PERFECT WHITE THEME & FIXES ---
+# --- CSS: THE "FORCE BLACK TEXT" UPDATE ---
 st.markdown("""
 <style>
     /* 1. FORCE GLOBAL WHITE THEME */
@@ -22,38 +22,42 @@ st.markdown("""
     /* 2. HIDE AUDIO PLAYER */
     .stAudio { display: none; }
 
-    /* 3. FIX METRIC COLORS (Make them visible!) */
+    /* 3. FIX METRIC LABELS (Aggressive Selector) */
+    /* Target the container, the label, and the value specifically */
     div[data-testid="stMetricLabel"] {
-        color: #666666 !important; /* Label is Grey */
+        color: #555555 !important; /* Dark Grey */
         font-size: 14px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    div[data-testid="stMetricLabel"] p {
+        color: #555555 !important; /* Force the paragraph tag inside to be grey */
     }
     div[data-testid="stMetricValue"] {
-        color: #000000 !important; /* Number is Black */
-        font-weight: bold !important;
+        color: #000000 !important; /* Black */
+    }
+    div[data-testid="stMetricValue"] div {
+        color: #000000 !important;
     }
 
-    /* 4. BUTTON STYLING (Fixing the Black Bar) */
-    /* This targets ALL buttons, including the geolocation one */
+    /* 4. BUTTON STYLING */
+    /* Universal Button Style: White with Black Border */
     button {
         background-color: #ffffff !important;
         color: #000000 !important;
-        border: 2px solid #000000 !important; /* Black border */
+        border: 2px solid #000000 !important;
         border-radius: 8px !important;
         padding: 5px 15px !important;
         margin: 0 auto !important;
         box-shadow: none !important;
     }
-    
-    /* Remove any weird background fill that creates the 'bar' */
     div[data-testid="stBlock"] button {
-        width: auto !important; /* Don't stretch */
         background: white !important;
+        width: auto !important;
     }
-
     button:hover {
-        background-color: #f0f0f0 !important;
-        border-color: #000000 !important;
-        color: #000000 !important;
+        background-color: #000000 !important;
+        color: #ffffff !important;
     }
 
     /* 5. TITLE STYLE */
@@ -61,12 +65,7 @@ st.markdown("""
         color: black !important;
         font-family: sans-serif;
         font-size: 32px !important;
-    }
-    
-    /* 6. CENTER IMAGES/GRAPHS */
-    div[data-testid="stGraphVizChart"] {
-        display: flex;
-        justify-content: center;
+        text-align: center;
     }
 
 </style>
@@ -97,13 +96,12 @@ st.title("This is Wind-ding")
 # === STATE 1: START SCREEN ===
 if st.session_state['coords'] is None:
     st.write("Click the button below to check the wind.")
-    st.write("") # Spacer
+    st.write("") 
 
-    # Use Columns to center the button
-    c1, c2, c3 = st.columns([3, 1, 3])
+    # CENTER LAYOUT: [1, 1, 1] means 3 equal columns. We put button in the middle.
+    c1, c2, c3 = st.columns([1, 1, 1])
     
     with c2:
-        # The Geolocation button (Now Clean White with Black Border)
         loc = streamlit_geolocation()
     
     if loc and loc['latitude'] is not None:
@@ -124,54 +122,59 @@ else:
         is_windy = speed >= 5.0 # Threshold
         
         # --- SHOW METRICS ---
+        # Note: Metrics auto-center content usually, but the labels need the CSS above
         m1, m2 = st.columns(2)
         m1.metric("Location", city)
         m2.metric("Wind Speed", f"{speed} m/s")
         
-        st.write("---") # Divider line
+        st.write("---") 
         
         # --- THE MEME ---
         if is_windy:
-            # PLAY SOUND
             if os.path.exists("sounds/furin.mp3"):
                 st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
             
-            # MEME GRAPH (Smaller, Thinner, Tighter)
-            dot = f"""
-            digraph G {{
-                bgcolor="transparent"; rankdir=TB; nodesep=0.3;
-                
-                # Global Settings: Thinner lines, Smaller Font
-                node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=11];
-                edge [color=black, penwidth=1.0, arrowsize=0.6]; # Smaller Arrow Head
-
-                # Diamond: Significantly smaller
-                Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", width=1.0, height=0.6, fixedsize=true];
-                
-                # Chime: Shorter and thinner
-                Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.6, height=2.2, fontsize=11];
-                
-                # Connection
-                Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=9];
-            }}
-            """
-            st.graphviz_chart(dot, use_container_width=False) # False keeps it small/centered
+            # CENTER THE MEME USING COLUMNS
+            # [1, 2, 1] makes the middle column 50% width, effectively centering the content
+            col_left, col_mid, col_right = st.columns([1, 2, 1])
             
-            # CLEAN TEXT STATUS (No Green Bar)
-            st.markdown("**The chime rings.**")
+            with col_mid:
+                dot = f"""
+                digraph G {{
+                    bgcolor="transparent"; rankdir=TB; nodesep=0.3;
+                    
+                    node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=11];
+                    edge [color=black, penwidth=1.0, arrowsize=0.6];
+
+                    Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", width=1.0, height=0.6, fixedsize=true];
+                    Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.6, height=2.2, fontsize=11];
+                    
+                    Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=9];
+                }}
+                """
+                st.graphviz_chart(dot, use_container_width=True)
+                
+                # Centered Text
+                st.markdown("<p style='text-align: center; font-weight: bold;'>The chime rings.</p>", unsafe_allow_html=True)
             
         else:
             # CALM STATE
-            st.markdown("<div style='font-size: 60px; margin: 20px;'>🍂</div>", unsafe_allow_html=True)
-            st.markdown("**It is calm.**")
-            st.markdown("The wind chime sleeps.")
+            col_left, col_mid, col_right = st.columns([1, 2, 1])
+            with col_mid:
+                st.markdown("<div style='font-size: 60px; margin: 20px; text-align: center;'>🍂</div>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center; font-weight: bold;'>It is calm.</p>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center;'>The wind chime sleeps.</p>", unsafe_allow_html=True)
 
         # --- RESET BUTTON ---
         st.write("")
         st.write("")
-        if st.button("Check Another Location"):
-            st.session_state['coords'] = None
-            st.rerun()
+        
+        # CENTER THE BUTTON USING COLUMNS
+        b1, b2, b3 = st.columns([1, 1, 1])
+        with b2:
+            if st.button("Check Another Location"):
+                st.session_state['coords'] = None
+                st.rerun()
             
     else:
         st.error("Could not fetch weather.")
