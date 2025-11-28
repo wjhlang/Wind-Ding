@@ -144,8 +144,8 @@ else:
                     node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=11];
                     edge [color=black, penwidth=1.0, arrowsize=0.6];
 
-                    Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", width=1.0, height=0.6, fixedsize=true];
-                    Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.6, height=2.2, fontsize=11];
+                    Start [shape=diamond, label="Is the wind blowing?", width=1.0, height=0.6, fontsize=8,fixedsize=true];
+                    Ding [shape=box, label="Ding", fixedsize=true, width=0.6, height=2.2, fontsize=11];
                     
                     Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=9];
                 }}
