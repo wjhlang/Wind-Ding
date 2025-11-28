@@ -9,74 +9,39 @@ load_dotenv()
 
 st.set_page_config(page_title="Wind-ding", page_icon="🎐")
 
-# --- AESTHETIC CSS (Monochrome) ---
+# --- CSS: CLEAN WHITE THEME ---
 st.markdown("""
 <style>
-    /* 1. FORCE WHITE THEME */
+    /* 1. FORCE WHITE THEME & BLACK TEXT */
     .stApp {
         background-color: #ffffff;
         color: #000000;
         text-align: center;
-        font-family: 'Helvetica', 'Arial', sans-serif;
     }
     
     /* 2. HIDE AUDIO PLAYER */
     .stAudio { display: none; }
 
-    /* 3. STYLING THE GEOLOCATION BUTTON (The Icon Button) */
-    div[data-testid="stBlock"] button {
-        width: 100px !important;
-        height: 100px !important;
-        background-color: #000000 !important; /* Black */
-        color: white !important;
-        border-radius: 50%; /* Circle */
-        border: none !important;
-        margin: 20px auto !important;
-        display: block !important;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
-        transition: all 0.2s ease-in-out;
-    }
-    div[data-testid="stBlock"] button:hover {
-        transform: scale(1.05);
-        background-color: #333333 !important;
+    /* 3. CENTER BUTTONS */
+    .stButton button {
+        margin: 0 auto;
+        display: block;
     }
     
-    /* 4. STYLING STANDARD BUTTONS (The 'Back' Button) */
-    .stButton button {
-        background-color: white !important;
-        color: black !important;
-        border: 2px solid black !important;
-        border-radius: 5px !important;
-        padding: 10px 20px !important;
-        font-weight: bold !important;
-        margin: 20px auto !important;
-        display: block !important;
-    }
-    .stButton button:hover {
-        background-color: black !important;
-        color: white !important;
-    }
-
-    /* 5. TITLE & TEXT */
+    /* 4. TITLE STYLE */
     h1 {
-        font-weight: 800 !important;
-        letter-spacing: -1px;
         color: black !important;
+        font-weight: 700 !important;
     }
-    .instruction-text {
-        color: #666;
-        font-size: 18px;
-        margin-bottom: 10px;
-    }
+    
+    /* 5. METRICS STYLE */
+    div[data-testid="stMetricLabel"] { color: #666 !important; }
+    div[data-testid="stMetricValue"] { color: #000 !important; }
 
-    /* 6. REMOVE STREAMLIT PADDING */
-    .block-container {
-        padding-top: 3rem;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- HELPER FUNCTIONS ---
+# --- FUNCTIONS ---
 def get_weather(lat, lon, key):
     try:
         url = f"http://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}&units=metric"
@@ -100,10 +65,16 @@ st.title("This is Wind-ding")
 
 # === STATE 1: START SCREEN ===
 if st.session_state['coords'] is None:
-    st.markdown('<p class="instruction-text">Click the button below to check the wind.</p>', unsafe_allow_html=True)
+    st.write("Click the button below to check the wind.")
+    st.write("") # Spacer
+
+    # Use Columns to center the button
+    # [3, 1, 3] creates a narrow column in the middle for the button
+    c1, c2, c3 = st.columns([3, 1, 3])
     
-    # This renders the geolocation button (Styled as a black circle by CSS above)
-    loc = streamlit_geolocation()
+    with c2:
+        # The Geolocation button (Standard icon style)
+        loc = streamlit_geolocation()
     
     if loc and loc['latitude'] is not None:
         st.session_state['coords'] = {'lat': loc['latitude'], 'lon': loc['longitude']}
@@ -119,27 +90,33 @@ else:
     
     if data:
         speed = data['wind']['speed']
+        city = data['name']
         is_windy = speed >= 5.0 # Threshold
         
-        # --- THE MEME (Black & White, Narrow) ---
+        # --- SHOW METRICS ---
+        m1, m2 = st.columns(2)
+        m1.metric("Location", city)
+        m2.metric("Wind Speed", f"{speed} m/s")
+        
+        st.write("---") # Divider line
+        
+        # --- THE MEME ---
         if is_windy:
-            # SOUND
+            # PLAY SOUND
             if os.path.exists("sounds/furin.mp3"):
                 st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
             
-            st.success(f"It is windy ({speed} m/s).")
-            
-            # Graphviz: Clean B&W lines
+            # MEME GRAPH (Black & White, Narrow Diamond)
             dot = f"""
             digraph G {{
                 bgcolor="transparent"; rankdir=TB; nodesep=0.5;
-                node [fontname="Helvetica", style=solid, color=black, fontcolor=black, penwidth=2];
+                node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=2];
                 edge [color=black, penwidth=2];
 
-                # Diamond: width=1.8 (Narrower), height=1.0
-                Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", width=1.8, height=1.0, fixedsize=true];
+                # Diamond: Narrow width
+                Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", width=1.2, height=0.8, fixedsize=true];
                 
-                # Chime: width=0.8 (Thin strip), height=3.0
+                # Chime: Thin strip
                 Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.8, height=3.0, fontsize=16];
                 
                 # Connection
@@ -147,19 +124,20 @@ else:
             }}
             """
             st.graphviz_chart(dot, use_container_width=True)
+            st.success("The chime rings.")
             
         else:
             # CALM STATE
-            st.info(f"It is calm ({speed} m/s).")
+            st.info("It is calm.")
             st.markdown("<div style='font-size: 80px; margin: 30px;'>🍂</div>", unsafe_allow_html=True)
-            st.markdown("The wind chime sleeps.")
+            st.write("The wind chime sleeps.")
 
         # --- RESET BUTTON ---
         st.write("")
         st.write("")
         if st.button("Check Another Location"):
-            st.session_state['coords'] = None # Clear state
-            st.rerun() # Go back to start
+            st.session_state['coords'] = None
+            st.rerun()
             
     else:
         st.error("Could not fetch weather.")
