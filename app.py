@@ -9,10 +9,10 @@ load_dotenv()
 
 st.set_page_config(page_title="Wind-ding", page_icon="🎐")
 
-# --- CSS: CLEAN WHITE THEME ---
+# --- CSS: PERFECT WHITE THEME & FIXES ---
 st.markdown("""
 <style>
-    /* 1. FORCE WHITE THEME & BLACK TEXT */
+    /* 1. FORCE GLOBAL WHITE THEME */
     .stApp {
         background-color: #ffffff;
         color: #000000;
@@ -22,47 +22,51 @@ st.markdown("""
     /* 2. HIDE AUDIO PLAYER */
     .stAudio { display: none; }
 
-    /* 3. CENTER & STYLE ALL BUTTONS (Streamline Look) */
-    .stButton button, div[data-testid="stBlock"] button {
-        background-color: white !important;
-        color: black !important;
-        border: 2px solid black !important;
-        border-radius: 8px !important;
-        padding: 10px 24px !important;
+    /* 3. FIX METRIC COLORS (Make them visible!) */
+    div[data-testid="stMetricLabel"] {
+        color: #666666 !important; /* Label is Grey */
+        font-size: 14px !important;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #000000 !important; /* Number is Black */
         font-weight: bold !important;
+    }
+
+    /* 4. BUTTON STYLING (Fixing the Black Bar) */
+    /* This targets ALL buttons, including the geolocation one */
+    button {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid #000000 !important; /* Black border */
+        border-radius: 8px !important;
+        padding: 5px 15px !important;
         margin: 0 auto !important;
-        display: block !important;
-        transition: all 0.2s;
+        box-shadow: none !important;
     }
     
-    /* Hover Effect: Turn Black */
-    .stButton button:hover, div[data-testid="stBlock"] button:hover {
-        background-color: black !important;
-        color: white !important;
-        border-color: black !important;
+    /* Remove any weird background fill that creates the 'bar' */
+    div[data-testid="stBlock"] button {
+        width: auto !important; /* Don't stretch */
+        background: white !important;
     }
-    
-    /* Fix the SVG Icon inside the geolocation button to swap colors too */
-    div[data-testid="stBlock"] button svg {
-        fill: currentColor !important;
+
+    button:hover {
+        background-color: #f0f0f0 !important;
+        border-color: #000000 !important;
+        color: #000000 !important;
     }
-    
-    /* 4. TITLE STYLE */
+
+    /* 5. TITLE STYLE */
     h1 {
         color: black !important;
-        font-weight: 700 !important;
         font-family: sans-serif;
+        font-size: 32px !important;
     }
     
-    /* 5. METRICS STYLE (Restoring the labels) */
-    div[data-testid="stMetricLabel"] { 
-        color: #666 !important; /* Grey color for the small label */
-        font-size: 14px !important;
-        font-weight: normal !important;
-    }
-    div[data-testid="stMetricValue"] { 
-        color: #000 !important; /* Black color for the value */
-        font-weight: bold !important;
+    /* 6. CENTER IMAGES/GRAPHS */
+    div[data-testid="stGraphVizChart"] {
+        display: flex;
+        justify-content: center;
     }
 
 </style>
@@ -99,7 +103,7 @@ if st.session_state['coords'] is None:
     c1, c2, c3 = st.columns([3, 1, 3])
     
     with c2:
-        # The Geolocation button (Now White with Black Border)
+        # The Geolocation button (Now Clean White with Black Border)
         loc = streamlit_geolocation()
     
     if loc and loc['latitude'] is not None:
@@ -132,33 +136,35 @@ else:
             if os.path.exists("sounds/furin.mp3"):
                 st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
             
-            # MEME GRAPH (Thinner strokes, smaller font)
+            # MEME GRAPH (Smaller, Thinner, Tighter)
             dot = f"""
             digraph G {{
-                bgcolor="transparent"; rankdir=TB; nodesep=0.5;
+                bgcolor="transparent"; rankdir=TB; nodesep=0.3;
                 
-                # Global Node Settings: Thinner lines (penwidth=1), smaller font (fontsize=12)
-                node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=12];
-                edge [color=black, penwidth=1.0];
+                # Global Settings: Thinner lines, Smaller Font
+                node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=11];
+                edge [color=black, penwidth=1.0, arrowsize=0.6]; # Smaller Arrow Head
 
-                # Diamond: Narrow width
-                Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", width=1.2, height=0.8, fixedsize=true];
+                # Diamond: Significantly smaller
+                Start [shape=diamond, label="風有在吹嗎？\\n(Wind?)", width=1.0, height=0.6, fixedsize=true];
                 
-                # Chime: Thin strip
-                Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.8, height=3.0, fontsize=12];
+                # Chime: Shorter and thinner
+                Ding [shape=box, label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding)", fixedsize=true, width=0.6, height=2.2, fontsize=11];
                 
                 # Connection
-                Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=10];
+                Start:s -> Ding:n [label=" YES ", fontcolor=black, fontsize=9];
             }}
             """
-            st.graphviz_chart(dot, use_container_width=True)
-            st.success("The chime rings.")
+            st.graphviz_chart(dot, use_container_width=False) # False keeps it small/centered
+            
+            # CLEAN TEXT STATUS (No Green Bar)
+            st.markdown("**The chime rings.**")
             
         else:
             # CALM STATE
-            st.info("It is calm.")
-            st.markdown("<div style='font-size: 80px; margin: 30px;'>🍂</div>", unsafe_allow_html=True)
-            st.write("The wind chime sleeps.")
+            st.markdown("<div style='font-size: 60px; margin: 20px;'>🍂</div>", unsafe_allow_html=True)
+            st.markdown("**It is calm.**")
+            st.markdown("The wind chime sleeps.")
 
         # --- RESET BUTTON ---
         st.write("")
