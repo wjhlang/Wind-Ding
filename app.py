@@ -91,8 +91,8 @@ if location and location['latitude'] is not None:
 
         if is_windy:
             st.success(f"💨 It is windy in {city_name}! *DING*")
-            if os.path.exists("sound/furin.mp3"):
-                st.audio("sound/furin.mp3", format="audio/mp3", autoplay=True)
+            if os.path.exists("soundsfurin.mp3"):
+                st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
         else:
             st.info("🍂 It is calm.")
             
