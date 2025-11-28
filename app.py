@@ -4,21 +4,39 @@ import os
 from dotenv import load_dotenv
 from streamlit_geolocation import streamlit_geolocation
 
+# Load local .env (only works on your computer, not cloud if you deleted .env)
 load_dotenv()
 
 st.set_page_config(page_title="Wind-ding", page_icon="🎐")
 
-# --- CSS ---
+# --- STYLES ---
 st.markdown("""
 <style>
-    .big-font { font-size:30px !important; font-weight: bold; }
-    .stButton>button { width: 100%; }
+    .stApp { text-align: center; }
+    .big-title { 
+        font-size: 40px !important; 
+        font-weight: bold; 
+        text-align: center; 
+        margin-bottom: 20px;
+    }
+    .instruction {
+        font-size: 20px;
+        text-align: center;
+        color: #555;
+        margin-bottom: 20px;
+    }
+    /* Make the geolocation button wide and centered */
+    div[data-testid="stBlock"] button {
+        width: 100%;
+        background-color: #ff4b4b;
+        color: white;
+        height: 3em;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # --- FUNCTIONS ---
 def get_weather_by_coords(lat, lon, key):
-    """Fetch weather using accurate GPS coordinates"""
     if not key:
         return None
     try:
@@ -30,75 +48,90 @@ def get_weather_by_coords(lat, lon, key):
     except:
         return None
 
-# --- SIDEBAR ---
+# --- API KEY SETUP ---
 api_key = st.secrets.get("OPENWEATHER_API_KEY") or os.getenv("OPENWEATHER_API_KEY")
 
-with st.sidebar:
-    st.header("⚙️ Settings")
-    if not api_key:
-        api_key = st.text_input("🔑 API Key", type="password")
-    
-    st.write("📍 **Location**")
+# --- MAIN PAGE LAYOUT ---
 
-    location = streamlit_geolocation()
-    
-    threshold = st.slider("💨 Wind Threshold (m/s)", 0.0, 20.0, 5.0)
+st.markdown('<div class="big-title">這個是風鈴 (This is Wind-ding)</div>', unsafe_allow_html=True)
 
-# --- MAIN APP ---
-st.markdown('<p class="big-font">這個是風鈴 (This is Wind-ding)</p>', unsafe_allow_html=True)
-
+# If we don't have the API key, stop here.
 if not api_key:
-    st.warning("👈 Please enter an API Key to start.")
+    st.error("API Key not found. Please check Streamlit Secrets or your .env file.")
     st.stop()
 
-# Check if user clicked the location button and gave permission
+# We use columns to center the button visually
+col1, col2, col3 = st.columns([1, 2, 1])
+
+
+with col2:
+    # This places the button in the middle column
+    location = streamlit_geolocation()
+
 if location and location['latitude'] is not None:
+    # --- PHASE 2: RESULT ---
+    
     lat = location['latitude']
     lon = location['longitude']
     
-    # Get Weather
-    weather_data = get_weather_by_coords(lat, lon, api_key)
+    # 1. Get Weather
+    with st.spinner("Checking the wind..."):
+        weather_data = get_weather_by_coords(lat, lon, api_key)
     
     if weather_data:
         wind_speed = weather_data['wind']['speed']
-        city_name = weather_data['name']
         
+        # --- SETTINGS (Hidden in code or Expander) ---
+        # You can hardcode this or put it in an expander if you really want to change it
+        threshold = 5.0 
         is_windy = wind_speed >= threshold
         
-        # --- DRAW MEME ---
+        # --- VISUALS ---
         graph_color = "green" if is_windy else "black"
         ding_color = "red" if is_windy else "grey"
         edge_style = "solid" if is_windy else "dashed"
-
+        
         dot_code = f"""
         digraph G {{
             rankdir=TB;
-            node [shape=box, style=filled, fillcolor=white, fontname="Helvetica"];
             bgcolor="transparent";
             
-            Start [label="風有在吹嗎？\\n(Is the wind blowing?)", shape=diamond];
-            Ding [label="叮鈴—\\n(Ding-)", fontsize=20, color="{ding_color}", penwidth=3];
+            # THE DIAMOND
+            node [shape=diamond, style=filled, fillcolor=white, fontname="Helvetica", width=4, height=1.5];
+            Start [label="風有在吹嗎？\\n(Is the wind blowing?)"];
             
+            # THE CHIME STRIP (Tall Rectangle)
+            node [shape=box, fixedsize=true, width=1.5, height=3.5, fontsize=20, penwidth=3];
+            Ding [label="\\n\\n叮\\n鈴\\n|\\n\\n(Ding-)", color="{ding_color}"];
+            
+            # THE ARROW
             Start -> Ding [label=" YES ", color="{graph_color}", fontcolor="{graph_color}", penwidth=3, style="{edge_style}"];
         }}
         """
+        
         st.graphviz_chart(dot_code)
         
-        # --- METRICS & AUDIO ---
-        col1, col2 = st.columns(2)
-        col1.metric("Location", city_name)
-        col2.metric("Current Wind", f"{wind_speed} m/s")
-
+        # --- METRICS & SOUND ---
+        c1, c2 = st.columns(2)
+        c1.metric("Location", weather_data['name'])
+        c2.metric("Wind Speed", f"{wind_speed} m/s")
+        
         if is_windy:
-            st.success(f"💨 It is windy in {city_name}! *DING*")
-            if os.path.exists("soundsfurin.mp3"):
-                st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
+            st.success("💨 It is windy! The chime rings.")
+            
+            # Play Sound
+            sound_path = "sounds/furin.mp3"
+            if os.path.exists(sound_path):
+                # We use specific MIME type and autoplay
+                st.audio(sound_path, format="audio/mp3", autoplay=True)
+            else:
+                st.warning(f"Sound file not found at: {sound_path}")
         else:
-            st.info("🍂 It is calm.")
+            st.info("🍂 It is calm. The chime sleeps.")
             
     else:
-        st.error("❌ Error fetching weather. Check API Key.")
+        st.error("Could not fetch weather data.")
 
 else:
-    st.info("👈 Click the **'Get Location'** button in the sidebar to start!")
-    st.markdown("_(This will ask your browser for permission)_")
+    # --- PHASE 1: LANDING PAGE (User hasn't clicked yet) ---
+    st.markdown('<p class="instruction">Sooo, where are you?</p>', unsafe_allow_html=True)
