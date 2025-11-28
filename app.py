@@ -7,65 +7,52 @@ from streamlit_geolocation import streamlit_geolocation
 # Load env (local)
 load_dotenv()
 
-st.set_page_config(page_title="Wind-ding", page_icon="🎐")
+st.set_page_config(page_title="Wind-ding", page_icon="🎐", layout="centered")
 
-# --- CSS: THE "FORCE BLACK TEXT" UPDATE ---
+# --- CSS: THE FINAL FIX ---
 st.markdown("""
 <style>
-    /* 1. FORCE GLOBAL WHITE THEME */
+    /* 1. FORCE THEME: WHITE BACKGROUND, BLACK TEXT */
     .stApp {
         background-color: #ffffff;
         color: #000000;
-        text-align: center;
+        font-family: sans-serif;
     }
     
-    /* 2. HIDE AUDIO PLAYER */
+    /* 2. HIDE THE STREAMLIT TOP BAR (The "Off" looking bar) */
+    header[data-testid="stHeader"] {
+        display: none;
+    }
+    
+    /* 3. HIDE AUDIO PLAYER */
     .stAudio { display: none; }
 
-    /* 3. FIX METRIC LABELS (Aggressive Selector) */
-    /* Target the container, the label, and the value specifically */
-    div[data-testid="stMetricLabel"] {
-        color: #555555 !important; /* Dark Grey */
-        font-size: 14px !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    div[data-testid="stMetricLabel"] p {
-        color: #555555 !important; /* Force the paragraph tag inside to be grey */
-    }
-    div[data-testid="stMetricValue"] {
-        color: #000000 !important; /* Black */
-    }
-    div[data-testid="stMetricValue"] div {
-        color: #000000 !important;
-    }
-
-    /* 4. BUTTON STYLING */
-    /* Universal Button Style: White with Black Border */
+    /* 4. BUTTON STYLING (Clean White with Black Border) */
     button {
         background-color: #ffffff !important;
         color: #000000 !important;
         border: 2px solid #000000 !important;
         border-radius: 8px !important;
-        padding: 5px 15px !important;
-        margin: 0 auto !important;
+        padding: 6px 18px !important;
         box-shadow: none !important;
-    }
-    div[data-testid="stBlock"] button {
-        background: white !important;
-        width: auto !important;
+        transition: all 0.2s;
     }
     button:hover {
         background-color: #000000 !important;
         color: #ffffff !important;
     }
+    
+    /* Fix the geolocation button container */
+    div[data-testid="stBlock"] button {
+        background: white !important;
+        width: auto !important;
+    }
 
     /* 5. TITLE STYLE */
     h1 {
         color: black !important;
-        font-family: sans-serif;
-        font-size: 32px !important;
         text-align: center;
+        padding-top: 20px;
     }
 
 </style>
@@ -95,12 +82,11 @@ st.title("This is Wind-ding")
 
 # === STATE 1: START SCREEN ===
 if st.session_state['coords'] is None:
-    st.write("Click the button below to check the wind.")
+    st.markdown("<p style='text-align: center; color: #333;'>Click the button below to check the wind.</p>", unsafe_allow_html=True)
     st.write("") 
 
-    # CENTER LAYOUT: [1, 1, 1] means 3 equal columns. We put button in the middle.
+    # CENTER THE GEOLOCATION BUTTON
     c1, c2, c3 = st.columns([1, 1, 1])
-    
     with c2:
         loc = streamlit_geolocation()
     
@@ -121,23 +107,35 @@ else:
         city = data['name']
         is_windy = speed >= 5.0 # Threshold
         
-        # --- SHOW METRICS ---
-        # Note: Metrics auto-center content usually, but the labels need the CSS above
-        m1, m2 = st.columns(2)
-        m1.metric("Location", city)
-        m2.metric("Wind Speed", f"{speed} m/s")
+        # --- CUSTOM HTML METRICS (Fixes the Invisible Text Issue) ---
+        # We manually write HTML to guarantee the text is Black/Grey
         
-        st.write("---") 
+        m1, m2 = st.columns(2)
+        with m1:
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <p style="color: #666; margin: 0; font-size: 14px;">Location</p>
+                <p style="color: #000; margin: 0; font-size: 24px; font-weight: bold;">{city}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with m2:
+            st.markdown(f"""
+            <div style="text-align: center;">
+                <p style="color: #666; margin: 0; font-size: 14px;">Wind Speed</p>
+                <p style="color: #000; margin: 0; font-size: 24px; font-weight: bold;">{speed} m/s</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("<hr style='margin: 25px 0; border-top: 1px solid #ddd;'>", unsafe_allow_html=True)
         
         # --- THE MEME ---
         if is_windy:
             if os.path.exists("sounds/furin.mp3"):
                 st.audio("sounds/furin.mp3", format="audio/mp3", autoplay=True)
             
-            # CENTER THE MEME USING COLUMNS
-            # [1, 2, 1] makes the middle column 50% width, effectively centering the content
+            # Center the meme
             col_left, col_mid, col_right = st.columns([1, 2, 1])
-            
             with col_mid:
                 dot = f"""
                 digraph G {{
@@ -153,28 +151,24 @@ else:
                 }}
                 """
                 st.graphviz_chart(dot, use_container_width=True)
-                
-                # Centered Text
-                st.markdown("<p style='text-align: center; font-weight: bold;'>The chime rings.</p>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center; color: black; font-weight: bold;'>The chime rings.</p>", unsafe_allow_html=True)
             
         else:
             # CALM STATE
             col_left, col_mid, col_right = st.columns([1, 2, 1])
             with col_mid:
                 st.markdown("<div style='font-size: 60px; margin: 20px; text-align: center;'>🍂</div>", unsafe_allow_html=True)
-                st.markdown("<p style='text-align: center; font-weight: bold;'>It is calm.</p>", unsafe_allow_html=True)
-                st.markdown("<p style='text-align: center;'>The wind chime sleeps.</p>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center; color: black; font-weight: bold;'>It is calm.</p>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align: center; color: #555;'>The wind chime sleeps.</p>", unsafe_allow_html=True)
 
-        # --- RESET BUTTON ---
+        # --- RESET BUTTON (LEFT ALIGNED) ---
         st.write("")
         st.write("")
         
-        # CENTER THE BUTTON USING COLUMNS
-        b1, b2, b3 = st.columns([1, 1, 1])
-        with b2:
-            if st.button("Check Another Location"):
-                st.session_state['coords'] = None
-                st.rerun()
+        # No columns here means it aligns left by default
+        if st.button("Check Another Location"):
+            st.session_state['coords'] = None
+            st.rerun()
             
     else:
         st.error("Could not fetch weather.")
