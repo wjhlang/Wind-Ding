@@ -138,21 +138,21 @@ else:
                 bgcolor="transparent"; rankdir=TB; nodesep=0.5;
                 
                 # Global Node Settings: Thinner lines (penwidth=1), smaller font (fontsize=12)
-                node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=12];
+                node [fontname="Arial", style=solid, color=black, fontcolor=black, penwidth=1.0, fontsize=10];
                 edge [color=black, penwidth=1.0];
 
                 # Diamond: Narrow width
                 Start [shape=diamond, label="Is the wind blowing?", width=1.2, height=0.8, fixedsize=true];
                 
                 # Chime: Thin strip
-                Ding [shape=box, label="Ding---", fixedsize=true, width=0.8, height=3.0, fontsize=12];
+                Ding [shape=box, label="Ding", fixedsize=true, width=0.8, height=3.0, fontsize=12];
                 
                 # Connection
-                Start:s -> Ding:n [label=" YES ", fontcolor=black, arrowsize=1.5];
+                Start:s -> Ding:n [label="YES", fontcolor=black, arrowsize=1];
             }}
             """
             st.graphviz_chart(dot, use_container_width=True)
-            st.success()
+            st.success('Ding')
             
         else:
             # CALM STATE
